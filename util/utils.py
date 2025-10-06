@@ -551,6 +551,20 @@ def get_xywh_yolo(input):
     return x, y, w, h
 
 def check_ocr_box(image_source: Union[str, Image.Image], display_img = True, output_bb_format='xywh', goal_filtering=None, easyocr_args=None):
+    """
+    Perform OCR on an image using PaddleOCR.
+    
+    Args:
+        image_source: Path to image file or PIL Image object
+        display_img: Whether to display the annotated image
+        output_bb_format: Format for bounding boxes ('xywh' or 'xyxy')
+        goal_filtering: Optional filtering parameter
+        easyocr_args: Legacy parameter name for OCR arguments (for backward compatibility)
+                     Supported args: 'text_threshold', 'paragraph'
+    
+    Returns:
+        Tuple of ((text_list, bbox_list), goal_filtering)
+    """
     if isinstance(image_source, str):
         image_source = Image.open(image_source)
     if image_source.mode == 'RGBA':
