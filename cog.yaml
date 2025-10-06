@@ -20,5 +20,8 @@ build:
 
   run:
     - FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn --no-build-isolation
+    # OCR_LANGUAGES can be set to configure PaddleOCR language support
+    # Examples: 'en' (English), 'ch' (Chinese & English), 'fr' (French), 'german', 'korean', 'japan'
+    # Default is 'en' if not specified
 
 predict: "predict.py:Predictor" 

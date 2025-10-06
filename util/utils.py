@@ -20,9 +20,12 @@ MODEL_CACHE = "weights"
 os.makedirs(MODEL_CACHE, exist_ok=True)
 # Initialize PaddleOCR
 # use_angle_cls=True enables text direction classification
-# lang='en' for English text recognition
+# lang supports multiple languages: 'en', 'ch' (Chinese & English), 'fr', 'german', 'korean', 'japan', etc.
+# For multiple language support, you can use 'ch' which includes both Chinese and English
+# or specify other languages as needed. See PaddleOCR docs for full list.
+OCR_LANGUAGES = os.environ.get('OCR_LANGUAGES', 'en')  # Default to English, can be set via environment variable
 reader = PaddleOCR(use_angle_cls=True, 
-                   lang='en',
+                   lang=OCR_LANGUAGES,
                    use_gpu=torch.cuda.is_available(),
                    show_log=False)
 import time
