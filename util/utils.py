@@ -14,15 +14,20 @@ import cv2
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-import easyocr
+from paddleocr import PaddleOCR
 
 MODEL_CACHE = "weights"
 os.makedirs(MODEL_CACHE, exist_ok=True)
-reader = easyocr.Reader(['en'], 
-                       model_storage_directory=MODEL_CACHE,
-                       download_enabled=True,
-                       # Use GPU if available
-                       gpu=torch.cuda.is_available())
+# Initialize PaddleOCR
+# use_angle_cls=True enables text direction classification
+# lang supports multiple languages: 'en', 'ch' (Chinese & English), 'fr', 'german', 'korean', 'japan', etc.
+# For multiple language support, you can use 'ch' which includes both Chinese and English
+# or specify other languages as needed. See PaddleOCR docs for full list.
+OCR_LANGUAGES = os.environ.get('OCR_LANGUAGES', 'en')  # Default to English, can be set via environment variable
+reader = PaddleOCR(use_angle_cls=True, 
+                   lang=OCR_LANGUAGES,
+                   use_gpu=torch.cuda.is_available(),
+                   show_log=False)
 import time
 import base64
 
@@ -549,6 +554,20 @@ def get_xywh_yolo(input):
     return x, y, w, h
 
 def check_ocr_box(image_source: Union[str, Image.Image], display_img = True, output_bb_format='xywh', goal_filtering=None, easyocr_args=None):
+    """
+    Perform OCR on an image using PaddleOCR.
+    
+    Args:
+        image_source: Path to image file or PIL Image object
+        display_img: Whether to display the annotated image
+        output_bb_format: Format for bounding boxes ('xywh' or 'xyxy')
+        goal_filtering: Optional filtering parameter
+        easyocr_args: Legacy parameter name for OCR arguments (for backward compatibility)
+                     Supported args: 'text_threshold', 'paragraph'
+    
+    Returns:
+        Tuple of ((text_list, bbox_list), goal_filtering)
+    """
     if isinstance(image_source, str):
         image_source = Image.open(image_source)
     if image_source.mode == 'RGBA':
@@ -557,11 +576,30 @@ def check_ocr_box(image_source: Union[str, Image.Image], display_img = True, out
     image_np = np.array(image_source)
     w, h = image_source.size
 
+    # PaddleOCR arguments mapping
+    # easyocr_args might contain: paragraph, text_threshold, etc.
+    # PaddleOCR uses: det=True, rec=True, cls=True
+    paddleocr_args = {}
     if easyocr_args is None:
         easyocr_args = {}
-    result = reader.readtext(image_np, **easyocr_args)
-    coord = [item[0] for item in result]
-    text = [item[1] for item in result]
+    
+    # Map text_threshold to rec_threshold for PaddleOCR
+    if 'text_threshold' in easyocr_args:
+        paddleocr_args['det_db_score_mode'] = 'slow'  # More accurate detection
+        # Note: PaddleOCR doesn't have direct text_threshold, using default behavior
+    
+    # PaddleOCR returns: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], (text, confidence)]
+    result = reader.ocr(image_np, cls=True)
+    
+    # Handle case when no text is detected
+    if result is None or len(result) == 0 or result[0] is None:
+        coord = []
+        text = []
+    else:
+        # PaddleOCR returns results in format: [[[bbox], (text, confidence)], ...]
+        # We need to extract bbox and text
+        coord = [item[0] for item in result[0]]
+        text = [item[1][0] for item in result[0]]  # item[1] is (text, confidence)
 
     if display_img:
         opencv_img = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)

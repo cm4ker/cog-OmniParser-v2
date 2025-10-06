@@ -5,7 +5,8 @@ build:
   python_packages:
     - "torch==2.4"
     - "torchvision==0.19.1"
-    - "easyocr==1.7.1"
+    - "paddlepaddle-gpu==3.0.0"
+    - "paddleocr==2.8.1"
     - "supervision==0.18.0"
     - "transformers==4.49.0"
     - "ultralytics==8.3.70"
@@ -19,5 +20,8 @@ build:
 
   run:
     - FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn --no-build-isolation
+    # OCR_LANGUAGES can be set to configure PaddleOCR language support
+    # Examples: 'en' (English), 'ch' (Chinese & English), 'fr' (French), 'german', 'korean', 'japan'
+    # Default is 'en' if not specified
 
 predict: "predict.py:Predictor" 
